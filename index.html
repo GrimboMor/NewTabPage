@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grimbo's Links</title>
+    <link rel="icon" href="Images/favicon.ico" type="image/x-icon">
+    <style>
+        :root {
+            --base-tile-size: 100px;
+            --tile-size: var(--base-tile-size);
+            --gap: 12px;
+            --folder-bg: rgba(255, 255, 255, 0.2);
+            --tile-bg: rgba(255, 255, 255, 0.1);
+            --tile-hover: rgba(255, 255, 255, 0.3);
+            --folder-overlay-bg: rgba(70, 70, 90, 0.95);
+            --max-columns: 8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { overflow-y: scroll; }
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 6vh var(--gap) 0;
+            background: url('Images/Background.png') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, var(--tile-size));
+            gap: var(--gap);
+            justify-content: center;
+            max-width: calc(var(--max-columns) * (var(--tile-size) + var(--gap)));
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+        .tile {
+            width: var(--tile-size);
+            height: var(--tile-size);
+            background-color: var(--tile-bg);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            overflow: hidden;
+            position: relative;
+            margin: 0 auto;
+            transform-origin: center;
+        }
+        .tile:hover {
+            background-color: var(--tile-hover);
+            transform: scale(1.05);
+            z-index: 1;
+            position: relative;
+        }
+        .tile img {
+            width: 50%;
+            height: 50%;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+        .tile.image-only { padding: 0; justify-content: stretch; }
+        .tile.image-only img { width: 100%; height: 100%; object-fit: cover; margin-bottom: 0; }
+        .tile span {
+            font-size: 12px;
+            text-align: center;
+            padding: 0 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+        .tile.image-only span { display: none; }
+        .folder { background-color: var(--folder-bg); }
+        .folder .tile-icon { position: relative; }
+        .folder .tile-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background-color: var(--folder-bg);
+            border-radius: 50%;
+        }
+        /* tile size inside folder: Folder overlay styles */
+        .folder-overlay {
+            position: fixed;
+            background-color: var(--folder-overlay-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            display: none;
+            flex-direction: column;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 20vw;
+            min-width: 220px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        .folder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .folder-title { font-size: 1rem; font-weight: bold; color: white; }
+        .folder-title.hidden { display: none; }
+        .close-folder {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        /* tile size inside folder: Folder content grid and gap */
+        .folder-content {
+            display: grid;
+            gap: 12px;
+            padding: 16px;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .folder-overlay-visible {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .overlay-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(77, 94, 110, 0.4);
+            z-index: 99;
+            display: none;
+        }
+        .overlay-backdrop-visible {
+            display: block;
+            animation: fadeIn 0.0s ease;
+        }
+        /* tile size inside folder: Subtle hover effect for tiles in folder overlay */
+        .folder-overlay .tile:hover {
+            background-color: var(--tile-hover);
+            transform: scale(1.02);
+            z-index: auto;
+            position: static;
+        }
+        /* tile size inside folder: Stylized clock tile CSS */
+        /* To adjust the clock tile's appearance, edit the .clock-tile and .clock-tile .clock-bg, .clock-time, .clock-date rules below */
+        .clock-tile {
+            background: url('Images/Clock.png') center center/cover no-repeat;
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(60,60,100,0.15);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        .clock-tile .clock-bg {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .clock-tile .clock-day {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 0.1em;
+            text-shadow: 0 1px 4px #0004;
+        }
+        .clock-tile .clock-time {
+            font-size: 2.2em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px #0006, 0 1px 0 #fff2;
+            margin-bottom: 0.1em;
+        }
+        .clock-tile .clock-date {
+            font-size: 1em;
+            opacity: 0.8;
+            text-shadow: 0 1px 4px #0004;
+        }
+        /* tile size inside folder: Stylized weather tile gradient */
+        .weather-gradient {
+            background: url('Images/Weather.png') center center/cover no-repeat;
+            border-radius: 16px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            background-clip: border-box; /* Ensures background is clipped to border radius */
+            /* Removed padding here to prevent edge bleed */
+        }
+        .weather-2x2 {
+            /* Move padding here so content is inset, but background fills rounded rect */
+            padding: 8px 8px 8px 8px;
+        }
+        .weather-4col {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            justify-items: center;
+            align-items: center;
+            padding: 8px;
+        }
+        .weather-current {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            width: 100%;
+        }
+        .weather-current-temp {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 0.2em;
+        }
+        .weather-current-details {
+            font-size: 0.90em;
+            opacity: 0.85;
+            margin-bottom: 0.2em;
+            white-space: nowrap;
+        }
+        .weather-day {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            width: 100%;
+        }
+        .weather-day-icon {
+            width: 66px;
+            height: 66px;
+            margin-bottom: 2px;
+        }
+        .weather-day-high {
+            color: #ff7a4d;
+            font-weight: bold;
+            margin-bottom: 1px;
+        }
+        .weather-day-low {
+            color: #4d91ff;
+        }
+        .weather-day-rain {
+            opacity: 0.85;
+        }
+        .weather-day-high,
+        .weather-day-low,
+        .weather-day-rain {
+            font-size: 0.75em;
+        }
+        .weather-3col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+            justify-items: center;
+            align-items: center;
+            padding: 4px;
+        }
+        .weather-today {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            width: 100%;
+        }
+        .weather-today-icon {
+            width: 66px;
+            height: 66px;
+            margin-bottom: 2px;
+        }
+        .weather-today-temp {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .weather-today-details {
+            font-size: 0.95em;
+            opacity: 0.85;
+            margin-bottom: 0.2em;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            :root {
+                --tile-size: 140px;
+                --gap: 20px;
+            }
+            .tile span { font-size: 14px; }
+        }
+        @media (min-width: 1024px) {
+            :root {
+                --tile-size: 160px;
+                --gap: 25px;
+            }
+        }
+        @media (min-width: 1440px) {
+            :root { --tile-size: 180px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="homeScreen"></div>
+    <div class="folder-overlay" id="folderOverlay">
+        <div class="folder-header">
+            <div class="folder-title" id="folderTitle">Folder</div>
+            <button class="close-folder" id="closeFolder">×</button>
+        </div>
+        <div class="folder-content" id="folderContent"></div>
+    </div>
+    <div class="overlay-backdrop" id="overlayBackdrop"></div>
+    <script>
+        // --- Data and DOM references ---
+        // tileData: Array of all tiles and folders to display on the home screen.
+        // Each tile can be a link, folder, clock, or weather tile.
+        const tileData = [
+            {
+                "name": "plex",
+                "type": "link",
+                "url": "https://www.plex.tv/",
+                "icon": "Images/Plex.png",
+                "imageOnly": true
+            },       
+            {
+                "name": "BBC iPlayer",
+                "type": "link",
+                "url": "https://www.bbc.co.uk/iplayer",
+                "icon": "Images/BBC.png",
+                "imageOnly": true
+            },
+            {
+                "name": "C4",
+                "type": "link",
+                "url": "https://www.channel4.com/",
+                "icon": "Images/C4.png",
+                "imageOnly": true
+            },
+            {
+                "name": "ITVx",
+                "type": "link",
+                "url": "https://www.itv.com",
+                "icon": "Images/ITV.png",
+                "imageOnly": true
+            },
+            {
+                "name": "YouTube",
+                "type": "link",
+                "url": "https://www.youtube.com/feed/subscriptions",
+                "icon": "Images/Youtube.png",
+                "imageOnly": true
+            },
+            {
+                "name": "Prime",
+                "type": "link",
+                "url": "https://www.amazon.co.uk/Amazon-Video/b/?ie=UTF8&node=3010085031&ref_=nav_cs_prime_video",
+                "icon": "Images/Prime.png",
+                "imageOnly": true
+            },
+            {
+                "name": "Audiobookshelf",
+                "type": "link",
+                "url": "https://www.audiobookshelf.org/",
+                "icon": "Images/abooksLogo.png",
+                "imageOnly": true
+            },
+            {
+                "name": "Gmail",
+                "type": "link",
+                "url": "https://mail.google.com",
+                "icon": "Images/gmail.png",
+                "imageOnly": true
+            },
+            {
+                "name": "AVClub",
+                "type": "link",
+                "url": "https://www.avclub.com/latest",
+                "icon": "Images/TheAVClub.jpg",
+                "imageOnly": true
+            },
+            {
+                "name": "Feedly",
+                "type": "link",
+                "url": "https://feedly.com/",
+                "icon": "Images/Feedly.png",
+                "imageOnly": true
+            },
+            {
+                "name": "TrueNAS",
+                "type": "link",
+                "url": "https://www.truenas.com/",
+                "icon": "Images/TrueNAS.png",
+                "imageOnly": true
+            },
+            {
+                "name": "PiHole",
+                "type": "link",
+                "url": "https://pi-hole.net/",
+                "icon": "Images/pihole.jpg",
+                "imageOnly": true
+            },
+            {
+                name: "Shopping",
+                type: "folder",
+                icon: "Images/Shopping.png",
+                imageOnly: true,
+                tiles: [
+                    {
+                        "name": "amazon",
+                        "type": "link",
+                        "url": "https://www.amazon.ie/",
+                        "icon": "Images/amazon.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "AliExpress",
+                        "type": "link",
+                        "url": "https://www.aliexpress.com//",
+                        "icon": "Images/AliExpress.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "ebay",
+                        "type": "link",
+                        "url": "https://www.ebay.ie/",
+                        "icon": "Images/ebay.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "Aldi",
+                        "type": "link",
+                        "url": "https://www.aldi.ie/specialbuys",
+                        "icon": "Images/Aldi.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "Lidl",
+                        "type": "link",
+                        "url": "https://www.lidl.ie/",
+                        "icon": "Images/Lidl.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "PCPart",
+                        "type": "link",
+                        "url": "https://uk.pcpartpicker.com/",
+                        "icon": "Images/PCPart.png",
+                        "imageOnly": true
+                    }
+                ]
+            },
+            {
+                "name": "Twitch",
+                "type": "link",
+                "url": "https://www.twitch.tv/limmy/",
+                "icon": "Images/Twitch.png",
+                "imageOnly": true
+            },
+            {
+                "name": "Keep",
+                "type": "link",
+                "url": "https://keep.google.com/",
+                "icon": "Images/Keep.png",
+                "imageOnly": true
+            },
+            {
+                name: "AI",
+                type: "folder",
+                icon: "Images/ai.png",
+                imageOnly: true,
+                tiles: [
+                    {
+                        "name": "ChatGPT",
+                        "type": "link",
+                        "url": "https://chatgpt.com/",
+                        "icon": "Images/ChatGPT.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "DeepSeek",
+                        "type": "link",
+                        "url": "https://chat.deepseek.com/",
+                        "icon": "Images/Deepseek.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "Gemini",
+                        "type": "link",
+                        "url": "https://gemini.google.com/app",
+                        "icon": "Images/Gemini.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "CoPilot",
+                        "type": "link",
+                        "url": "https://copilot.microsoft.com/",
+                        "icon": "Images/Copilot.png",
+                        "imageOnly": true
+                    },
+                ]
+            },
+            {
+                name: "Tech News",
+                type: "folder",
+                icon: "Images/TechNews.png",
+                imageOnly: true,
+                tiles: [
+                    {
+                        "name": "Ars",
+                        "type": "link",
+                        "url": "https://arstechnica.com/",
+                        "icon": "Images/Ars.png",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "Euro",
+                        "type": "link",
+                        "url": "https://www.eurogamer.net/",
+                        "icon": "Images/Euro.webp",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "Kotaku",
+                        "type": "link",
+                        "url": "https://kotaku.com/",
+                        "icon": "Images/Kotaku.webp",
+                        "imageOnly": true
+                    },
+                    {
+                        "name": "Verge",
+                        "type": "link",
+                        "url": "https://www.theverge.com/",
+                        "icon": "Images/Verge.png",
+                        "imageOnly": true
+                    }
+                ]
+            },
+            {
+                "name": "Dockge",
+                "type": "link",
+                "url": "https://github.com/louislam/dockge",
+                "icon": "Images/Dockge.png",
+                "imageOnly": true
+            },
+            {
+                "name": "CloudFlare",
+                "type": "link",
+                "url": "https://www.cloudflare.com",
+                "icon": "Images/CloudF.png",
+                "imageOnly": true
+            },
+            {
+                "name": "Synct",
+                "type": "link",
+                "url": "https://syncthing.net/",
+                "icon": "Images/SyncT.png",
+                "imageOnly": true
+            },
+            {
+                "name": "Photos",
+                "type": "link",
+                "url": "https://photos.google.com/",
+                "icon": "Images/Photos.png",
+                "imageOnly": true
+            },  
+            {
+                "name": "Sheets",
+                "type": "link",
+                "url": "https://workspace.google.com/products/sheets/",
+                "icon": "Images/Sheets.png",
+                "imageOnly": true
+            },
+            // tile size inside folder: Add clock and weather tile types
+            {
+                type: "clock",
+                name: "Clock"
+            },
+            {
+                type: "weather",
+                name: "Weather",
+                city: "Drogheda" // Change to your city
+            }
+        ];
+        const homeScreen = document.getElementById('homeScreen');
+        const folderOverlay = document.getElementById('folderOverlay');
+        const folderTitle = document.getElementById('folderTitle');
+        const folderContent = document.getElementById('folderContent');
+        const closeFolder = document.getElementById('closeFolder');
+        const overlayBackdrop = document.getElementById('overlayBackdrop');
+
+        // --- Render Functions ---
+        /**
+         * Render an array of tiles into a container element.
+         * Handles all tile types: link, folder, clock, weather.
+         * @param {Array} tiles - Array of tile objects to render
+         * @param {HTMLElement} container - The DOM element to render into
+         */
+        function renderTiles(tiles, container) {
+            container.innerHTML = '';
+            tiles.forEach(tile => {
+                let tileElement = document.createElement('div');
+                tileElement.className = 'tile';
+
+                // Render a live clock tile
+                if (tile.type === 'clock') {
+                    tileElement.classList.add('clock-tile');
+                    tileElement.innerHTML = `
+                        <div class="clock-bg">
+                            <div class="clock-time" id="clockTime">--:--</div>                            
+                            <div class="clock-day" id="clockDay">---</div>
+                            <div class="clock-date" id="clockDate">---</div>
+                        </div>
+                    `;
+                    function updateClock() {
+                        const now = new Date();
+                        tileElement.querySelector('#clockTime').textContent =
+                            now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        tileElement.querySelector('#clockDay').textContent =
+                            now.toLocaleDateString([], {weekday: 'long'});
+                        tileElement.querySelector('#clockDate').textContent =
+                            now.toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
+                    }
+                    updateClock();
+                    setInterval(updateClock, 1000);
+                }
+                // Render a weather tile using OpenWeatherMap API
+                else if (tile.type === 'weather') {
+                    tileElement.innerHTML = `
+                        <a href="https://www.msn.com/en-ie/weather/forecast/in-Drogheda,County-Louth" target="_self" rel="noopener noreferrer" style="text-decoration:none;display:block;width:100%;height:100%;">
+                            <div class="weather-gradient">
+                                <div class="weather-3col"></div>
+                            </div>
+                        </a>
+                    `;
+                    // Fetch and display weather for the next 3 days
+                    async function updateWeatherTile() {
+                        const apiKey = 'de5dc9e041c61aa58046c6d662c1b85e';
+                        // Use lat/lon for Weather
+                        const lat = 53.322999;
+                        const lon = -5.359665;
+                        const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+                        try {
+                            const res = await fetch(url);
+                            const data = await res.json();
+                            const grid = tileElement.querySelector('.weather-3col');
+                            grid.innerHTML = '';
+                            if (!data.list) {
+                                grid.textContent = 'Weather unavailable';
+                                return;
+                            }
+                            // Group forecast data by day
+                            const days = {};
+                            data.list.forEach(item => {
+                                const date = item.dt_txt.split(' ')[0];
+                                if (!days[date]) days[date] = [];
+                                days[date].push(item);
+                            });
+                            const dayKeys = Object.keys(days);
+                            // --- Today column ---
+                            const today = days[dayKeys[0]];
+                            // Use 12:00 or fallback to first for icon
+                            const todayData = today.find(item => item.dt_txt.includes('12:00:00')) || today[0];
+                            const todayIcon = todayData.weather[0].icon;
+                            const todayDesc = todayData.weather[0].main;
+                            // Average temp for today
+                            const avgTemp = Math.round(today.reduce((sum, item) => sum + item.main.temp, 0) / today.length);
+                            let rain = '0%';
+                            if (typeof todayData.pop === 'number' && !isNaN(todayData.pop)) {
+                                rain = Math.round(Number(todayData.pop) * 100) + '%';
+                            }
+                            const wind = todayData.wind && todayData.wind.speed ? `${Math.round(todayData.wind.speed * 3.6)} km` : 'N/A';
+                            grid.innerHTML += `
+                                <div class="weather-today">
+                                    <img class="weather-today-icon" src='https://openweathermap.org/img/wn/${todayIcon}@4x.png' alt='${todayDesc}'>
+                                    <div class="weather-today-temp">${avgTemp}°</div>
+                                    <div class="weather-today-details">🔻${(() => {
+                                        // Nighttime low: find min temp between 00:00 and 06:00 for today
+                                        const nightItems = today.filter(item => {
+                                            const hour = new Date(item.dt_txt).getHours();
+                                            return hour >= 0 && hour <= 6;
+                                        });
+                                        if (nightItems.length > 0) {
+                                            return Math.round(Math.min(...nightItems.map(item => item.main.temp_min)));
+                                        } else {
+                                            // fallback to overall min
+                                            return Math.round(today.reduce((min, item) => item.main.temp_min < min ? item.main.temp_min : min, today[0].main.temp_min));
+                                        }
+                                    })()}°</div>
+                                    <div class="weather-today-details">💧${rain}</div>
+                                    <div class="weather-today-details">🌀${wind}</div>
+                                    </div>
+                            `;
+                            // --- Tomorrow and Next Day columns ---
+                            for (let i = 1; i < 3; i++) {
+                                const date = dayKeys[i];
+                                if (!date) continue;
+                                const dayData = days[date].find(item => item.dt_txt.includes('12:00:00')) || days[date][0];
+                                const icon = dayData.weather[0].icon;
+                                const desc = dayData.weather[0].main;
+                                let high = -100, low = 100, rainSum = 0, rainCount = 0, nightLow = null;
+                                days[date].forEach(item => {
+                                    if (item.main.temp_max > high) high = item.main.temp_max;
+                                    if (item.main.temp_min < low) low = item.main.temp_min;
+                                    if (typeof item.pop === 'number' && !isNaN(item.pop)) { rainSum += Number(item.pop); rainCount++; }
+                                    // Nighttime low for next days
+                                    const hour = new Date(item.dt_txt).getHours();
+                                    if (hour >= 0 && hour <= 6) {
+                                        if (nightLow === null || item.main.temp_min < nightLow) nightLow = item.main.temp_min;
+                                    }
+                                    if (item.wind && typeof item.wind.speed === 'number') {
+                                        item.wind.kmh = Math.round(item.wind.speed * 3.6);
+                                    }
+                                });
+                                const rainChance = rainCount > 0 ? Math.round((rainSum / rainCount) * 100) + '%' : '0%';
+                                const displayLow = nightLow !== null ? Math.round(nightLow) : Math.round(low);
+                                grid.innerHTML += `
+                                    <div class="weather-day">
+                                        <img class="weather-day-icon" src='https://openweathermap.org/img/wn/${icon}@4x.png' alt='${desc}'>
+                                        <div class="weather-day-high">🔺${Math.round(high)}°</div>
+                                        <div class="weather-day-low">🔻${displayLow}°</div>
+                                        <div class="weather-day-rain">💧${rainChance}</div>
+                                    </div>
+                                `;
+                            }
+                        } catch (e) {
+                            tileElement.querySelector('.weather-3col').textContent = 'Weather unavailable';
+                        }
+                    }
+                    updateWeatherTile();
+                    setInterval(updateWeatherTile, 60 * 60 * 1000);
+                }
+                // Render a link tile (external or internal link)
+                else if (tile.type === 'link') {
+                    tileElement.className = `tile ${tile.imageOnly ? 'image-only' : ''}`;
+                    let linkWrapper = document.createElement('a');
+                    linkWrapper.href = tile.url;
+                    linkWrapper.target = '_self';
+                    linkWrapper.rel = 'noopener noreferrer';
+                    const icon = document.createElement('img');
+                    icon.className = 'tile-icon';
+                    icon.src = tile.icon || 'https://cdn-icons-png.flaticon.com/512/2965/2965300.png';
+                    icon.alt = tile.name;
+                    linkWrapper.appendChild(icon);
+                    // Only append label if not imageOnly
+                    if (!tile.imageOnly) {
+                        const label = document.createElement('span');
+                        label.textContent = tile.name;
+                        linkWrapper.appendChild(label);
+                    }
+                    tileElement.appendChild(linkWrapper);
+                }
+                // Render a folder tile (opens overlay with more tiles)
+                else if (tile.type === 'folder') {
+                    tileElement.className = `tile folder ${tile.imageOnly ? 'image-only' : ''}`;
+                    let linkWrapper = document.createElement('div');
+                    const icon = document.createElement('img');
+                    icon.className = 'tile-icon';
+                    icon.src = tile.icon || 'https://cdn-icons-png.flaticon.com/512/2965/2965300.png';
+                    icon.alt = tile.name;
+                    const label = document.createElement('span');
+                    label.textContent = tile.name;
+                    linkWrapper.appendChild(icon);
+                    linkWrapper.appendChild(label);
+                    tileElement.appendChild(linkWrapper);
+                    // Clicking a folder tile opens the folder overlay
+                    tileElement.addEventListener('click', (e) => {
+                        openFolder(tile, tileElement, e);
+                    });
+                }
+                container.appendChild(tileElement);
+            });
+        }
+
+        /**
+         * Open a folder overlay, dynamically sizing it and its tiles based on screen and content.
+         * @param {Object} folder - The folder tile object
+         * @param {HTMLElement} tileElement - The DOM element for the folder tile
+         * @param {Event} event - The click event
+         */
+        function openFolder(folder, tileElement, event) {
+            event.stopPropagation();
+            if (folder.hideTitle) {
+                folderTitle.classList.add('hidden');
+            } else {
+                folderTitle.classList.remove('hidden');
+                folderTitle.textContent = folder.name;
+            }
+            // Calculate folder overlay size (20vw, min 220px, max 90vw)
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const folderWidth = Math.max(220, Math.min(viewportWidth * 0.2, viewportWidth * 0.9));
+            // Calculate grid for tiles (try to make as square as possible)
+            const itemCount = folder.tiles.length;
+            let columns = Math.ceil(Math.sqrt(itemCount));
+            let rows = Math.ceil(itemCount / columns);
+            while ((rows * columns < itemCount)) {
+                columns++;
+                rows = Math.ceil(itemCount / columns);
+            }
+            folderContent.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            folderContent.style.gridAutoRows = '1fr';
+            // Estimate tile size using default gap/padding, then recalc with dynamic gap/padding
+            let estGap = 12;
+            let estPadding = 16;
+            let tileWidth = (folderWidth - estPadding * 2 - estGap * (columns - 1)) / columns;
+            // Now, set gap and padding based on tileWidth (dynamic, but clamped)
+            const gap = Math.max(4, Math.min(Math.round(tileWidth * 0.10), 16));
+            const padding = Math.max(4, Math.min(Math.round(tileWidth * 0.12), 20));
+            // Recalculate tileWidth with new gap/padding
+            tileWidth = (folderWidth - padding * 2 - gap * (columns - 1)) / columns;
+            const tileHeight = tileWidth;
+            // Header height (if visible)
+            const headerHeight = folderTitle.classList.contains('hidden') ? 0 : (folderOverlay.querySelector('.folder-header').offsetHeight || 45);
+            // Calculate folder height based on rows, tile size, gaps, paddings, and header
+            const folderHeight = Math.min(
+                rows * tileHeight + (rows - 1) * gap + padding * 2 + headerHeight,
+                viewportHeight * 0.9
+            );
+            // Set overlay and content styles
+            folderOverlay.style.display = 'flex';
+            folderOverlay.style.visibility = 'hidden';
+            folderOverlay.style.width = `${folderWidth}px`;
+            folderOverlay.style.height = `${folderHeight}px`;
+            folderContent.style.setProperty('--tile-size', tileWidth + 'px');
+            folderContent.style.padding = `${padding}px`;
+            folderContent.style.gap = `${gap}px`;
+            // Render folder tiles
+            renderTiles(folder.tiles, folderContent);
+            // Center overlay near the clicked tile, but keep on screen
+            const tileRect = tileElement.getBoundingClientRect();
+            const margin = 10;
+            let left = tileRect.left + tileRect.width / 2 - folderWidth / 2;
+            let top = tileRect.top + tileRect.height / 2 - folderHeight / 2;
+            if (left < margin) left = margin;
+            if (left + folderWidth > viewportWidth - margin) left = viewportWidth - folderWidth - margin;
+            if (top < margin) top = margin;
+            if (top + folderHeight > viewportHeight - margin) top = viewportHeight - folderHeight - margin;
+            folderOverlay.style.left = `${left}px`;
+            folderOverlay.style.top = `${top}px`;
+            folderOverlay.style.visibility = 'visible';
+            folderOverlay.classList.add('folder-overlay-visible');
+            overlayBackdrop.classList.add('overlay-backdrop-visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        /**
+         * Close the folder overlay and reset styles.
+         */
+        function closeFolderOverlay() {
+            folderOverlay.classList.remove('folder-overlay-visible');
+            overlayBackdrop.classList.remove('overlay-backdrop-visible');
+            folderOverlay.style.display = 'none';
+            folderOverlay.style.visibility = '';
+            folderOverlay.style.width = '';
+            folderOverlay.style.height = '';
+            folderContent.style.setProperty('--tile-size', '');
+            document.body.style.overflow = '';
+        }
+
+        // --- Event Listeners ---
+        // Close overlay on close button click
+        closeFolder.addEventListener('click', e => { e.stopPropagation(); closeFolderOverlay(); });
+        // Close overlay on backdrop click
+        overlayBackdrop.addEventListener('click', closeFolderOverlay);
+        // Close overlay if clicking outside overlay
+        document.addEventListener('click', e => {
+            if (!folderOverlay.contains(e.target) && folderOverlay.classList.contains('folder-overlay-visible') && e.target !== overlayBackdrop) {
+                closeFolderOverlay();
+            }
+        });
+        // Close overlay on window resize
+        window.addEventListener('resize', () => {
+            if (folderOverlay.classList.contains('folder-overlay-visible')) closeFolderOverlay();
+        });
+        // Close overlay on Escape key
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && folderOverlay.classList.contains('folder-overlay-visible')) closeFolderOverlay();
+        });
+        // Initial render of home screen tiles
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTiles(tileData, homeScreen);
+        });
+    </script>
+</body>
+</html>
