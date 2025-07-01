@@ -652,7 +652,7 @@
                 // Render a weather tile using OpenWeatherMap API
                 else if (tile.type === 'weather') {
                     tileElement.innerHTML = `
-                        <a href="https://www.msn.com/en-ie/weather/forecast/in-Drogheda,County-Louth" target="_self" rel="noopener noreferrer" style="text-decoration:none;display:block;width:100%;height:100%;">
+                        <a href="https://www.msn.com/en-ie/weather/forecast/in-Ireland's-Eye,Ireland" target="_self" rel="noopener noreferrer" style="text-decoration:none;display:block;width:100%;height:100%;">
                             <div class="weather-gradient">
                                 <div class="weather-3col"></div>
                             </div>
@@ -660,7 +660,7 @@
                     `;
                     // Fetch and display weather for the next 3 days
                     async function updateWeatherTile() {
-                        const apiKey = 'de5dc9e041c61aa58046c6d662c1b85e';
+                        const apiKey = '{YOUR-API-KEY}';
                         // Use lat/lon for Weather
                         const lat = 53.322999;
                         const lon = -5.359665;
