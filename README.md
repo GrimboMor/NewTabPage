@@ -14,6 +14,18 @@ Designed for quick access to your favourite sites, tools, and folders, with live
 - **Weather Tile:** Shows a 3-day forecast for your city (uses OpenWeatherMap, just set your lat/lon and API key in the code).
 - **No Build Tools Needed:** Just open `index.html` in your browser. No frameworks, no dependencies, no server required.
 
+## Screenshots
+
+### Sample Start Page
+![Start Page](https://github.com/GrimboMor/NewTabPage/blob/main/Screenshots/01.png?raw=true)
+
+### Folder Overlay Opened
+![Folder Open](https://github.com/GrimboMor/NewTabPage/blob/main/Screenshots/02.png?raw=true)
+
+### Portrait Mode Example
+![Portrait Resize](https://github.com/GrimboMor/NewTabPage/blob/main/Screenshots/03.png?raw=true)
+
+
 ## Getting Started
 
 1. **Clone or Download:**
