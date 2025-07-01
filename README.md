@@ -30,7 +30,7 @@ Designed for quick access to your favourite sites, tools, and folders, with live
 
 1. **Clone or Download:**
    ```
-   git clone https://github.com/YOUR_USERNAME/your-repo-name.git
+   git clone https://github.com/GrimboMor/NewTabPage
    ```
    Or download and unzip the project.
 
